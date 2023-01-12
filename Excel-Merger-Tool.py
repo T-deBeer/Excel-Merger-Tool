@@ -6,6 +6,7 @@ import pandas as pd
 import datetime as datetime
 from pathlib import Path
 import os
+import openpyxl
 
 window_height = 600
 window_width = 1100
@@ -70,6 +71,29 @@ class App(customtkinter.CTk):
                                           str(self.txtFileTwo.get()))
                 self.cmbxCommonColumn.configure(values=common)
 
+        def SelectColumnFile():
+            columns = []
+            filetypes = (
+                ("Excel files", ".xlsx .xls"),
+                ("All files", ".")
+            )
+
+            filename = fd.askopenfilename(
+                title='Open a file',
+                initialdir='/',
+                filetypes=filetypes)
+
+            self.txtSelectFile.configure(state="normal")
+            self.txtSelectFile.delete(0, END)
+            self.txtSelectFile.insert(0, filename)
+            self.txtSelectFile.configure(state="readonly")
+
+            df = pd.read_excel(filename, sheet_name=0)
+            for col in df.columns:
+                columns.append(col)
+
+            self.cmbxColumn1.configure(values=columns)
+
         def GetCommonColumns(file1, file2):
             sheet1_columns = []
             sheet2_columns = []
@@ -115,7 +139,7 @@ class App(customtkinter.CTk):
             path = f'{Path.cwd()}/VHT Merged_{today}.xlsx'
 
             # export new dataframe to excel
-            df.to_excel(f'VHT Merged_{today}.xlsx')
+            df.to_excel(f'VHT Merged_{today}.xlsx', index=False)
 
             showinfo(
                 title='New Sheet Made',
@@ -133,6 +157,20 @@ class App(customtkinter.CTk):
             self.cmbxCommonColumn.set("Common Columns")
 
             self.lblMessage.destroy()
+
+        def SelectColumn1(selected_column):
+            columns = []
+
+            df = pd.read_excel(str(self.txtSelectFile.get()), sheet_name=0)
+            for col in df.columns:
+                if col != selected_column:
+                    columns.append(col)
+
+            self.cmbxColumn2.configure(state="normal")
+            self.cmbxColumn2.configure(values=columns)
+
+        def SelectColumn2(second_column):
+            pass
 
         # configure window
         self.title("Excel Merging Tool")
@@ -159,7 +197,7 @@ class App(customtkinter.CTk):
         sheet_merging_tab.rowconfigure((0, 1, 2), weight=0)
         # Tab components
         self.lblRequirements = customtkinter.CTkTextbox(
-            sheet_merging_tab, font=customtkinter.CTkFont(size=18), fg_color="transparent", width=500, height=100)
+            sheet_merging_tab, font=customtkinter.CTkFont(size=18), fg_color="transparent", width=590, height=100)
         self.lblRequirements.insert(
             "0.0", "This merges the first sheet of two seperate Excel files. The sheets must have atleast one column heading in common.")
         self.lblRequirements.configure(state="disabled")
@@ -170,7 +208,7 @@ class App(customtkinter.CTk):
         self.lblFileOne.grid(row=1, column=0, pady=10)
 
         self.txtFileOne = customtkinter.CTkEntry(sheet_merging_tab,
-                                                 font=customtkinter.CTkFont(size=15), width=500, fg_color=dark, border_color=dark_green)
+                                                 font=customtkinter.CTkFont(size=15), width=580, fg_color=dark, border_color=dark_green)
         self.txtFileOne.grid(row=1, column=1, padx=10, pady=10)
 
         self.btnFileOne = customtkinter.CTkButton(
@@ -182,7 +220,7 @@ class App(customtkinter.CTk):
         self.lblFileTwo .grid(row=2, column=0, pady=10)
 
         self.txtFileTwo = customtkinter.CTkEntry(sheet_merging_tab,
-                                                 font=customtkinter.CTkFont(size=15), width=500, fg_color=dark, border_color=dark_green)
+                                                 font=customtkinter.CTkFont(size=15), width=580, fg_color=dark, border_color=dark_green)
         self.txtFileTwo .grid(row=2, column=1, padx=10, pady=10)
 
         self.btnFileTwo = customtkinter.CTkButton(
@@ -193,15 +231,44 @@ class App(customtkinter.CTk):
             sheet_merging_tab, text="Select Common Column", font=customtkinter.CTkFont(size=15))
         self.lblCommonColumn .grid(row=3, column=0, pady=10)
         self.cmbxCommonColumn = customtkinter.CTkComboBox(
-            sheet_merging_tab, border_color=dark_green, dropdown_hover_color=dark_green, fg_color=dark, corner_radius=5, width=250, command=MergeSheets)
+            sheet_merging_tab, values=[], border_color=dark_green, dropdown_hover_color=dark_green, fg_color=dark, corner_radius=5, width=250, command=MergeSheets)
         self.cmbxCommonColumn.set("Common Column")
         self.cmbxCommonColumn .grid(row=3, column=1, padx=25, pady=10)
         # Merge column tabs
         column_merging_tab = self.tabview.add("Merge Columns")
         # Tab configuration
-        column_merging_tab.columnconfigure(0, weight=1)
-        column_merging_tab.columnconfigure((1, 2), weight=0)
+        column_merging_tab.columnconfigure((0, 1, 2), weight=1)
         column_merging_tab.rowconfigure((0, 1, 2), weight=0)
+        # Tab Components
+        self.lblDesc = customtkinter.CTkTextbox(
+            column_merging_tab, font=customtkinter.CTkFont(size=18), fg_color="transparent", width=580, height=100)
+        self.lblDesc.insert(
+            "0.0", "This merges the columns in a sheet into one column.")
+        self.lblDesc.configure(state="disabled")
+        self.lblDesc.grid(row=0, column=0, columnspan=3)
+
+        self.lblSelectFile = customtkinter.CTkLabel(
+            column_merging_tab, text="Select File", font=customtkinter.CTkFont(size=15))
+        self.lblSelectFile .grid(row=1, column=0, pady=10)
+
+        self.txtSelectFile = customtkinter.CTkEntry(column_merging_tab,
+                                                    font=customtkinter.CTkFont(size=15), width=580, fg_color=dark, border_color=dark_green)
+        self.txtSelectFile .grid(row=1, column=1, padx=10, pady=10)
+
+        self.btnSelectFile = customtkinter.CTkButton(
+            column_merging_tab, text="Select File", fg_color=dark, hover_color=dark_green, border_width=2, corner_radius=5, border_color=dark_green, font=customtkinter.CTkFont(size=15), command=SelectColumnFile)
+        self.btnSelectFile .grid(row=1, column=2, padx=25, pady=10)
+
+        self.cmbxColumn1 = customtkinter.CTkComboBox(
+            column_merging_tab, values=[], border_color=dark_green, dropdown_hover_color=dark_green, fg_color=dark, corner_radius=5, width=300, command=SelectColumn1)
+        self.cmbxColumn1.set("First Column")
+        self.cmbxColumn1 .grid(row=2, column=1, padx=5, pady=10)
+
+        self.cmbxColumn2 = customtkinter.CTkComboBox(
+            column_merging_tab, values=[], border_color=dark_green, dropdown_hover_color=dark_green, fg_color=dark, corner_radius=5, width=300, command=SelectColumn2)
+        self.cmbxColumn2.set("Second Column")
+        self.cmbxColumn2.configure(state="disabled")
+        self.cmbxColumn2 .grid(row=3, column=1, padx=5, pady=10)
 
 
 if __name__ == "__main__":
