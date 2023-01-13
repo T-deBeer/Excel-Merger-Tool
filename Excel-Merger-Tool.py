@@ -136,14 +136,14 @@ class App(customtkinter.CTk):
             today = datetime.datetime.now()
             today = today.strftime("%Y-%m-%d_%H-%M")
 
-            path = f'{Path.cwd()}/VHT Merged_{today}.xlsx'
+            path = f'{Path.cwd()}\VHT Merged_{today}.xlsx'
 
             # export new dataframe to excel
             df.to_excel(f'VHT Merged_{today}.xlsx', index=False)
 
             showinfo(
                 title='New Sheet Made',
-                message=f"File can be found at:\n{Path.cwd()}/VHT Merged_{today}.xlsx"
+                message=f"File can be found at:\n{Path.cwd()}\VHT Merged_{today}.xlsx"
             )
             os.startfile(path)
 
@@ -163,14 +163,86 @@ class App(customtkinter.CTk):
 
             df = pd.read_excel(str(self.txtSelectFile.get()), sheet_name=0)
             for col in df.columns:
-                if col != selected_column:
+                if col != selected_column and df[col].dtypes == df[selected_column].dtypes:
                     columns.append(col)
 
             self.cmbxColumn2.configure(state="normal")
             self.cmbxColumn2.configure(values=columns)
 
         def SelectColumn2(second_column):
-            pass
+            value = []
+            value.append(str(self.cmbxColumn1.get()))
+            value.append(second_column)
+
+            self.cmbxColumn.configure(state="normal")
+            self.cmbxColumn.configure(values=value)
+
+        def MergeColumns(precedence):
+            columns = []
+
+            column_one = str(self.cmbxColumn1.get())
+            column_two = str(self.cmbxColumn2.get())
+
+            df = pd.read_excel(str(self.txtSelectFile.get()), sheet_name=0)
+            for col in df.columns:
+                columns.append(col)
+
+            new_column = ""
+            dialog = customtkinter.CTkInputDialog(
+                text="Type the name of the joint column:", title="Joint Column Name", fg_color=dark, button_fg_color=dark_green, button_hover_color=mustard, entry_border_color=dark_green, entry_fg_color=dark)
+
+            input = dialog.get_input()
+            print(input)
+            if input in columns:
+                new_column = input + "1"
+            else:
+                new_column = input
+
+            new_values = []
+            for i in df.index:
+                if df[column_one][i] is None:
+                    new_values.append(df[column_two][i])
+                else:
+                    if df[column_two][i] is None:
+                        new_values.append(df[column_one][i])
+                    else:
+                        new_values.append(df[precedence][i])
+
+            df[new_column] = new_values
+
+            today = datetime.datetime.now()
+            today = today.strftime("%Y-%m-%d_%H-%M")
+
+            wb = openpyxl.load_workbook(
+                str(self.txtSelectFile.get()))
+            sheets = wb.sheetnames
+            wb.remove(wb[sheets[0]])
+
+            df.to_excel(str(self.txtSelectFile.get()),
+                        sheet_name=f"Updated {today}")
+
+            showinfo(
+                title='Columns Joined',
+                message=f"Columns have been joined successfully")
+
+            self.txtSelectFile.configure(state="normal")
+            self.txtSelectFile.delete(0, END)
+            self.txtSelectFile.configure(state="readonly")
+
+            self.cmbxColumn1.configure(state="normal")
+            self.cmbxColumn1.configure(values=[])
+            self.cmbxColumn1.set("First Column")
+            self.cmbxColumn1.configure(state="readonly")
+
+            self.cmbxColumn2.configure(state="normal")
+            self.cmbxColumn2.configure(values=[])
+            self.cmbxColumn2.set("Second Column")
+            self.cmbxColumn2.configure(state="readonly")
+
+            self.cmbxColumn.configure(state="normal")
+            self.cmbxColumn.configure(values=[])
+            self.cmbxColumn.set("Precedence Column")
+            self.cmbxColumn.configure(state="readonly")
 
         # configure window
         self.title("Excel Merging Tool")
@@ -199,7 +271,7 @@ class App(customtkinter.CTk):
         self.lblRequirements = customtkinter.CTkTextbox(
             sheet_merging_tab, font=customtkinter.CTkFont(size=18), fg_color="transparent", width=590, height=100)
         self.lblRequirements.insert(
-            "0.0", "This merges the first sheet of two seperate Excel files. The sheets must have atleast one column heading in common.")
+            "0.0", "Merge the first sheet of two seperate Excel files. The sheets must have atleast one column heading in common.")
         self.lblRequirements.configure(state="disabled")
         self.lblRequirements.grid(row=0, column=0, columnspan=3)
         # File One components
@@ -243,7 +315,7 @@ class App(customtkinter.CTk):
         self.lblDesc = customtkinter.CTkTextbox(
             column_merging_tab, font=customtkinter.CTkFont(size=18), fg_color="transparent", width=580, height=100)
         self.lblDesc.insert(
-            "0.0", "This merges the columns in a sheet into one column.")
+            "0.0", "Merge seperate columns in a sheet into one column. If both columns have values then the precedence column's value will be used.")
         self.lblDesc.configure(state="disabled")
         self.lblDesc.grid(row=0, column=0, columnspan=3)
 
@@ -269,6 +341,12 @@ class App(customtkinter.CTk):
         self.cmbxColumn2.set("Second Column")
         self.cmbxColumn2.configure(state="disabled")
         self.cmbxColumn2 .grid(row=3, column=1, padx=5, pady=10)
+
+        self.cmbxColumn = customtkinter.CTkComboBox(
+            column_merging_tab, values=[], border_color=dark_green, dropdown_hover_color=dark_green, fg_color=dark, corner_radius=5, width=300, command=MergeColumns)
+        self.cmbxColumn.set("Precedence Column")
+        self.cmbxColumn.configure(state="disabled")
+        self.cmbxColumn .grid(row=4, column=1, padx=5, pady=10)
 
 
 if __name__ == "__main__":
