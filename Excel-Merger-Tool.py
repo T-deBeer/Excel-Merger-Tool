@@ -232,21 +232,20 @@ class App(customtkinter.CTk):
             self.cmbxColumn1.configure(state="normal")
             self.cmbxColumn1.configure(values=[])
             self.cmbxColumn1.set("First Column")
-            self.cmbxColumn1.configure(state="readonly")
 
             self.cmbxColumn2.configure(state="normal")
             self.cmbxColumn2.configure(values=[])
             self.cmbxColumn2.set("Second Column")
-            self.cmbxColumn2.configure(state="readonly")
 
             self.cmbxColumn.configure(state="normal")
             self.cmbxColumn.configure(values=[])
             self.cmbxColumn.set("Precedence Column")
-            self.cmbxColumn.configure(state="readonly")
 
         # configure window
         self.title("Excel Merging Tool")
         self.resizable(0, 0)
+        self.iconbitmap(".\Images\Logo.ico")
+
         screen_width = self.winfo_screenwidth()
         screen_height = self.winfo_screenheight()
 
